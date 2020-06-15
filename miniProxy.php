@@ -43,6 +43,10 @@ $forceCORS = false;
 //Set to false to allow sites on the local network (where miniProxy is running) to be proxied.
 $disallowLocal = true;
 
+//Set to true to strip the integrity attribute, since proxying often breaks it.
+//(This fixes `None of the "sha256" hashes in the integrity attribute match the content of the subresource.`)
+$noIntegrity = false;
+
 //Set to false to report the client machine's IP address to proxied sites via the HTTP `x-forwarded-for` header.
 //Setting to false may improve compatibility with some sites, but also exposes more information about end users to proxied sites.
 $anonymize = true;
@@ -504,6 +508,9 @@ if (stripos($contentType, "text/html") !== false) {
       $attrContent = rel2abs($attrContent, $url);
       $attrContent = PROXY_PREFIX . $attrContent;
       $element->setAttribute($attrName, $attrContent);
+      if ($noIntegrity and $element->hasAttribute("integrity")) {
+        $element->removeAttribute("integrity");
+      }
     }
   }
 
