@@ -447,6 +447,7 @@ if (stripos($contentType, "text/html") !== false) {
   $doc = new DomDocument();
   @$doc->loadHTML($responseBody);
   $xpath = new DOMXPath($doc);
+  $xpath->registerNamespace("xlink", "https://www.w3.org/1999/xlink");
 
   //Rewrite forms so that their actions point back to the proxy.
   foreach($xpath->query("//form") as $form) {
@@ -485,6 +486,13 @@ if (stripos($contentType, "text/html") !== false) {
   //Proxify "srcset" attributes in <img> tags.
   foreach ($xpath->query("//img[@srcset]") as $element) {
     $element->setAttribute("srcset", proxifySrcset($element->getAttribute("srcset"), $url));
+  }
+  //Proxify <svg> tags.
+  foreach ($xpath->query("//svg//use") as $element) {
+    $attrContent = $element->getAttribute("xlink:href");
+    $attrContent = rel2abs($attrContent, $url);
+    $attrContent = PROXY_PREFIX . $attrContent;
+    $element->setAttribute("xlink:href", $attrContent);
   }
   //Proxify any of these attributes appearing in any tag.
   $proxifyAttributes = ["href", "src"];
