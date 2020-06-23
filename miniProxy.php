@@ -191,6 +191,7 @@ function makeRequest($url) {
     [
       "Accept-Encoding", //Throw away the browser's Accept-Encoding header if any and let cURL make the request using gzip if possible.
       "Content-Length",
+      "Cookie",
       "Host",
       "Origin"
     ]
