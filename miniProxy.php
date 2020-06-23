@@ -51,6 +51,10 @@ $noIntegrity = false;
 //Setting to false may improve compatibility with some sites, but also exposes more information about end users to proxied sites.
 $anonymize = true;
 
+//Set to true to ignore the browser's Referer header and always use the requested host.
+//Either setting may improve compatibility, but true should work more often and reduces the chance of leaking info.
+$spoofReferer = true;
+
 //Start/default URL that that will be proxied when miniProxy is first loaded in a browser/accessed directly with no URL to proxy.
 //If empty, miniProxy will show its own landing page.
 $startURL = "";
@@ -173,6 +177,7 @@ define("PROXY_PREFIX", "http" . (isset($_SERVER["HTTPS"]) ? "s" : "") . "://" . 
 function makeRequest($url) {
 
   global $anonymize;
+  global $spoofReferer;
 
   //Tell cURL to make the request using the brower's user-agent if there is one, or a fallback user-agent otherwise.
   $user_agent = $_SERVER["HTTP_USER_AGENT"];
@@ -193,7 +198,8 @@ function makeRequest($url) {
       "Content-Length",
       "Cookie",
       "Host",
-      "Origin"
+      "Origin",
+      "Referer"
     ]
   );
 
@@ -217,6 +223,19 @@ function makeRequest($url) {
     $port = $urlParts["port"];
     $curlRequestHeaders[] = "Origin: " . $urlParts["scheme"] . "://" . $urlParts["host"] . (empty($port) ? "" : ":" . $port);
   };
+  //The `referer` header will also be incorrect, so replace it with something useful if possible.
+  if ($spoofReferer) {
+    //With this option set, ignore what the browser sends and always send the host of the requested url.
+    $urlParts = parse_url($url);
+    $port = (empty($urlParts["port"]) ? "" : ":" . $urlParts["port"]);
+    $curlRequestHeaders[] = "Referer: " . $urlParts["scheme"] . "://" . $urlParts["host"] . $port;
+  } elseif (in_array("referer", $removedHeaders)) {
+    //Unlike `origin`, the `referer` header contains the full url. Unproxy it if present.
+    $urlParts = parse_url($browserRequestHeaders["Referer"]);
+    if (!empty($urlParts["query"])) {
+      $curlRequestHeaders[] = "Referer: " . $urlParts["query"];
+    }
+  }
   curl_setopt($ch, CURLOPT_HTTPHEADER, $curlRequestHeaders);
 
   //Proxy any received GET/POST/PUT data.
