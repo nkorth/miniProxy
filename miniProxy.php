@@ -456,6 +456,14 @@ if ($forceCORS) {
 
 }
 
+//If we're replacing the browser's referer anyway, suggest that the browser shouldn't send anything.
+if ($spoofReferer) {
+  header("Referrer-Policy: no-referrer");
+} else {
+  //Otherwise, at least try to leak less info if something slips through the proxy to another host.
+  header("Referrer-Policy: same-origin");
+}
+
 $contentType = "";
 if (isset($responseInfo["content_type"])) $contentType = $responseInfo["content_type"];
 
