@@ -210,8 +210,9 @@ function makeRequest($url) {
     $curlRequestHeaders[] = "X-Forwarded-For: " . $_SERVER["REMOTE_ADDR"];
   }
   //Any `origin` header sent by the browser will refer to the proxy itself.
-  //If an `origin` header is present in the request, rewrite it to point to the correct origin.
-  if (in_array("origin", $removedHeaders)) {
+  //If an `origin` header is present in the request, replace it with the host of the requested url.
+  //This is somewhat insecure, so we'll only do it if $forceCORS is true.
+  if ($forceCORS and in_array("origin", $removedHeaders)) {
     $urlParts = parse_url($url);
     $port = $urlParts["port"];
     $curlRequestHeaders[] = "Origin: " . $urlParts["scheme"] . "://" . $urlParts["host"] . (empty($port) ? "" : ":" . $port);
